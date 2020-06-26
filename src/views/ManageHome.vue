@@ -10,7 +10,7 @@
         </ul>
       </div>
       <div class="ops-manage-home-main">
-        <el-table :data="showData" stripe style="width: 100%">
+        <el-table :data="showData" stripe style="width: 100%" row-key="id">
           <el-table-column
             align="center"
             header-align="center"
@@ -22,7 +22,12 @@
           <el-table-column align="center" header-align="center" prop="describe" label="图片描述"></el-table-column>
           <el-table-column align="center" header-align="center" label="图片">
             <template slot-scope="scope">
-              <img :src="imgBaseUrl + scope.row.img.img_url" width="100" height="100" />
+              <img
+                @click="goImgShow(scope.row.article_id,scope.row.img.img_id)"
+                :src="imgBaseUrl + scope.row.img.img_url"
+                width="100"
+                height="100"
+              />
             </template>
           </el-table-column>
           <el-table-column align="center" header-align="center" label="操作">
@@ -47,14 +52,27 @@
         ></el-pagination>
       </div>
     </div>
+    <AdminImgShow
+      @change="changeImgShow"
+      v-if="isShow"
+      :imgs="showData"
+      :articleId="articleId"
+      :imgId="imgId"
+    ></AdminImgShow>
   </div>
 </template>
 
 <script>
 // @ is an alias to /src
 import axios from "axios";
+import Sortable from "sortablejs";
+import AdminImgShow from "./AdminImgShow.vue";
+
 export default {
   name: "Home",
+  components: {
+    AdminImgShow
+  },
   data() {
     return {
       imgBaseUrl: "http://localhost:3000",
@@ -64,7 +82,9 @@ export default {
       showData: [],
       totalData: [],
       allData: [],
-      isShow1: true
+      isShow: false,
+      imgId: 0,
+      articleId: 0
     };
   },
   created() {
@@ -72,6 +92,7 @@ export default {
   },
   mounted() {
     this.initData();
+    this.rowDrop();
   },
   methods: {
     initData() {
@@ -111,8 +132,6 @@ export default {
       });
     },
     prevPage() {
-      console.log("上一页");
-      console.log(this.curPage);
       this.showData = this.totalData.slice(
         (this.curPage - 2) * this.pageSize,
         (this.curPage - 1) * this.pageSize
@@ -145,8 +164,8 @@ export default {
           this.totalData[i].article_id === scope.row.article_id &&
           this.totalData[i].img.img_id === scope.row.img.img_id
         ) {
-          let tmp=this.totalData.splice(i, 1)
-          this.totalData=tmp.concat(this.totalData);
+          let tmp = this.totalData.splice(i, 1);
+          this.totalData = tmp.concat(this.totalData);
           this.showData = this.totalData.slice(
             (this.curPage - 1) * this.pageSize,
             this.curPage * this.pageSize
@@ -176,7 +195,7 @@ export default {
               method: "put",
               url: "http://localhost:3000/admin/put",
               data: {
-                article_id:scope.row.article_id,
+                article_id: scope.row.article_id,
                 imgs: this.allData[i].imgs
               }
             }).then(res => {
@@ -191,7 +210,6 @@ export default {
           this.totalData[i].article_id === scope.row.article_id &&
           this.totalData[i].img.img_id === scope.row.img.img_id
         ) {
-
           this.allDataCount--;
           this.totalData.splice(i, 1);
           this.showData = this.totalData.slice(
@@ -201,6 +219,29 @@ export default {
           break;
         }
       }
+    },
+    rowDrop() {
+      const tbody = document.querySelector(".el-table__body-wrapper tbody");
+      const that = this;
+      Sortable.create(tbody, {
+        onEnd({ newIndex, oldIndex }) {
+          const currRow = that.showData.splice(oldIndex, 1)[0];
+          that.showData.splice(newIndex, 0, currRow);
+          let newArray = that.showData.slice(0);
+          that.showData = [];
+          that.$nextTick(function() {
+            that.showData = newArray;
+          });
+        }
+      });
+    },
+    goImgShow(article_id, img_id) {
+      this.isShow = true;
+      this.imgId = img_id;
+      this.articleId = article_id;
+    },
+    changeImgShow() {
+      this.isShow = false;
     }
   }
 };
