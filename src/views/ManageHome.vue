@@ -23,7 +23,7 @@
           <el-table-column align="center" header-align="center" label="图片">
             <template slot-scope="scope">
               <img
-                @click="goImgShow(scope.row.article_id,scope.row.img.img_id)"
+                @click="goImgShow(scope.$index)"
                 :src="imgBaseUrl + scope.row.img.img_url"
                 width="100"
                 height="100"
@@ -54,10 +54,11 @@
     </div>
     <AdminImgShow
       @change="changeImgShow"
+      @bigImgAccept="accept"
+      @bigImgReject="reject"
       v-if="isShow"
       :imgs="showData"
-      :articleId="articleId"
-      :imgId="imgId"
+      :index="index"
     ></AdminImgShow>
   </div>
 </template>
@@ -83,8 +84,7 @@ export default {
       totalData: [],
       allData: [],
       isShow: false,
-      imgId: 0,
-      articleId: 0
+      index: 0
     };
   },
   created() {
@@ -150,6 +150,7 @@ export default {
       );
     },
     accept(scope) {
+      console.log(scope);
       this.showData[scope.$index].isShow = false;
     },
     reject(scope) {
@@ -235,10 +236,9 @@ export default {
         }
       });
     },
-    goImgShow(article_id, img_id) {
+    goImgShow(index) {
       this.isShow = true;
-      this.imgId = img_id;
-      this.articleId = article_id;
+      this.index = index;
     },
     changeImgShow() {
       this.isShow = false;

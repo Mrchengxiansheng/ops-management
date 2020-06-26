@@ -5,7 +5,11 @@
       <span class="swp-header_right" @click="goArticle">返回</span>
     </div>
     <div class="swp-main" ref="swpmain">
-      <div class="img_card" v-for="item in sortedImgs" :key="item.id">
+      <div class="img_card" v-for="item in imgs" :key="item.id">
+        <div class="swp-operation">
+          <el-button v-show="item.isShow" @click="bigImgAccept" type="success">通过</el-button>
+          <el-button v-show="item.isShow" @click="bigImgReject" type="danger">拒绝</el-button>
+        </div>
         <div class="img_card_item">
           <img :src="imgBaseUrl + item.img.img_url" alt />
         </div>
@@ -19,14 +23,12 @@
 <script>
 export default {
   props: {
-    imgId: Number,
     imgs: Array,
-    articleId: Number
+    index: Number
   },
   data() {
     return {
       imgBaseUrl: "http://localhost:3000",
-      sortedImgs: [],
       pre: 0,
       now: 0,
       next: 0,
@@ -37,35 +39,25 @@ export default {
     };
   },
   created() {
-    this.sortData();
     this.count = this.imgs.length;
   },
   mounted() {
     this.initData();
   },
   methods: {
-    sortData() {
-      let imgIndex = 0;
-      for (let i = 0; i < this.imgs.length; i++) {
-        if (this.imgs[i].article_id === this.articleId) {
-          if (this.imgs[i].img.img_id === this.imgId) {
-            imgIndex = i;
-            break;
-          }
-        }
-      }
-      this.sortedImgs = this.sortedImgs.concat(this.imgs.slice(imgIndex));
-      this.sortedImgs = this.sortedImgs.concat(this.imgs.slice(0, imgIndex));
-    },
     initData() {
       this.clientWidth = document.querySelectorAll(".img_card")[0].clientWidth;
       const imgCard = document.querySelectorAll(".img_card");
       if (this.count === 1) {
-        this.now = 0;
+        this.now = this.index;
         imgCard[this.now].style.transform = "translateX(0px)";
       } else if (this.count === 2) {
         this.left = true;
-        this.now = 0;
+        this.now = this.index;
+        this.next = this.now + 1;
+        if (this.next > imgCard.length - 1) {
+          this.next = 0;
+        }
         this.next = 1;
         imgCard[this.now].style.transform = "translateX(0px)";
         imgCard[this.next].style.transform =
@@ -73,9 +65,15 @@ export default {
       } else {
         this.left = true;
         this.right = true;
-        this.pre = imgCard.length - 1;
-        this.now = 0;
-        this.next = 1;
+        this.pre = this.now - 1;
+        if (this.pre < 0) {
+          this.pre = imgCard.length - 1;
+        }
+        this.now = this.index;
+        this.next = this.now + 1;
+        if (this.next > imgCard.length - 1) {
+          this.next = 0;
+        }
         imgCard[this.pre].style.transform =
           "translateX(" + -this.clientWidth + "px)";
         imgCard[this.now].style.transform = "translateX(0px)";
@@ -84,8 +82,6 @@ export default {
       }
     },
     goLeft() {
-      console.log("左箭头被点击了1");
-
       const imgCard = document.querySelectorAll(".img_card");
       this.showPre(imgCard);
       if (this.count === 2 && this.now > this.next) {
@@ -94,7 +90,6 @@ export default {
       }
     },
     goRight() {
-      console.log("右箭头被点击了2");
       const imgCard = document.querySelectorAll(".img_card");
       this.showNext(imgCard);
       if (this.count === 2 && this.pre >= this.now) {
@@ -104,7 +99,6 @@ export default {
     },
     //往左走
     showPre(imgCard) {
-      //   imgCard[this.pre].style.transition = "none";
       imgCard[this.pre].style.transform =
         "translateX(" + this.clientWidth * 2 + "px)";
       this.pre = this.now;
@@ -117,7 +111,6 @@ export default {
     },
     // 往右走
     showNext(imgCard) {
-      //   imgCard[this.next].style.transition = "none";
       imgCard[this.next].style.transform =
         "translateX(" + 2 * this.clientWidth + "px)";
       this.next = this.now;
@@ -145,6 +138,20 @@ export default {
     },
     goArticle() {
       this.$emit("change");
+    },
+    bigImgAccept() {
+      let tmpScope = {
+        $index: this.now,
+        row: this.imgs[this.now]
+      };
+      this.$emit("bigImgAccept", tmpScope);
+    },
+    bigImgReject() {
+      let tmpScope = {
+        $index: this.now,
+        row: this.imgs[this.now]
+      };
+      this.$emit("bigImgReject", tmpScope);
     }
   }
 };
@@ -175,6 +182,11 @@ export default {
       float: right;
       margin-right: 30px;
     }
+  }
+  .swp-operation {
+    height: 50px;
+    line-height: 50px;
+    background-color: rgba(0, 0, 0, 0.3);
   }
   .swp-main {
     width: 100%;
